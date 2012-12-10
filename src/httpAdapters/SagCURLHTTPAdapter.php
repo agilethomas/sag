@@ -18,11 +18,11 @@ class SagCURLHTTPAdapter extends SagHTTPAdapter {
     }
 
     parent::__construct($host, $port);
-
-    $this->ch = curl_init();
   }
 
   public function procPacket($method, $url, $data = null, $headers = array(), $specialHost = null, $specialPort = null) {
+    $this->ch = curl_init();
+
     // the base cURL options
     $opts = array(
       CURLOPT_URL => "{$this->proto}://{$this->host}:{$this->port}{$url}",
@@ -85,6 +85,11 @@ class SagCURLHTTPAdapter extends SagHTTPAdapter {
 
     $chResponse = curl_exec($this->ch);
 
+    if ($curl_errno = curl_errno($this->ch)) {
+        $curl_error = curl_error($this->ch);
+    }
+    curl_close($this->ch);
+
     if($chResponse !== false) {
       // prepare the response object
       $response = new stdClass();
@@ -120,8 +125,8 @@ class SagCURLHTTPAdapter extends SagHTTPAdapter {
         }
       }
     }
-    else if(curl_errno($this->ch)) {
-      throw new SagException('cURL error #' . curl_errno($this->ch) . ': ' . curl_error($this->ch));
+    else if($curl_errno) {
+      throw new SagException('cURL error #' . $curl_errno . ': ' . $curl_error);
     }
     else {
       throw new SagException('cURL returned false without providing an error.');
